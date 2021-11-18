@@ -75,7 +75,7 @@ if __name__ == "__main__":
         for idx, (batch_img, batch_text) in enumerate(train_data_loader):
 
             image_embedding = image_encoder(batch_img.cuda()) # Output : N x 512
-            text_embedding = image_encoder(batch_text.cuda()) # Output : N x 512
+            text_embedding = text_encoder(batch_text.cuda()) # Output : N x 512
 
 
             # Normalization is need for calculating cosine similarity
