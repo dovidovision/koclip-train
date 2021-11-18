@@ -12,6 +12,8 @@ import time
 import numpy as np
 import wandb
 
+from models import ImageEncoder, TextEncoder
+from datasets import ImageTextPairDataset
 parser = argparse.ArgumentParser(description="Korean Image Text Clip Implementation")
 
 parser.add_argument("--epochs", default=100, type=int,
