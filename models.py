@@ -1,8 +1,10 @@
 import torch 
 import torchvision.models as models
+from torch import nn
+
 
 import timm
-from transformers import BertTokenizerFast, BertModel
+from transformers import AutoModel, AutoTokenizer, RobertaForSequenceClassification, pipeline
 
 class ImageEncoder(torch.nn.Module):
     def __init__(self):
@@ -16,10 +18,14 @@ class ImageEncoder(torch.nn.Module):
 class TextEncoder(torch.nn.Module):
     def __init__(self):
         super(TextEncoder, self).__init__()
-        self.tokenizer_bert = BertTokenizerFast.from_pretrained("kykim/bert-kor-base")
-        self.model_bert = BertModel.from_pretrained("kykim/bert-kor-base")
+        self.model = RobertaForSequenceClassification.from_pretrained("klue/roberta-small", num_labels=512)
+        self.model = self.model.eval()
 
-    def forward(self, x):
-        x = self.tokenizer_bert(x)
-        x = self.model_bert(x)
+        self.projection = torch.nn.Linear(512, 512)
+        self.projection = self.projection.train()
+
+    def forward(self, input_ids, attention_mask):
+        
+        x = self.model(input_ids, attention_mask=attention_mask)[0]
+        x = self.projection(x)
         return x

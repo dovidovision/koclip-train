@@ -2,6 +2,7 @@ import torch
 import clip
 import random
 import argparse
+from torch.autograd.grad_mode import no_grad
 
 import torch.nn.functional as F
 import torch.optim as optim
@@ -11,6 +12,8 @@ import math
 import time
 import numpy as np
 import wandb
+import clip
+from transformers import AutoModel, AutoTokenizer
 
 from models import ImageEncoder, TextEncoder
 from datasets import ImageTextPairDataset
@@ -41,7 +44,7 @@ args = parser.parse_args()
 if __name__ == "__main__":
     random.seed(42)
     
-    wandb.init(project="ko-clip", entity="maybe your ID")
+    wandb.init(project="ko-clip", entity="easter3163")
 
 
     imagetext_dataset = ImageTextPairDataset() # define in dataset.py
@@ -58,26 +61,29 @@ if __name__ == "__main__":
 
     # define in models.py 
     # image encoder includes Projection Head, So dimension size is 512
-    image_encoder = ImageEncoder().to(device)
+    clip_model, _ = clip.load("ViT-B/32", device=device)
     text_encoder = TextEncoder().to(device)
+    tokenizer = AutoModel.from_pretrained("klue/roberta-base")
 
-    optimizer = optim.SGD(list(image_encoder.parameters()) + list(text_encoder.parameters()), lr=args.lr,
+
+    optimizer = optim.SGD(text_encoder.parameters(), lr=args.lr,
                momentum=args.momentum, weight_decay=args.weight_decay)
     
     scheduler = optim.lr_scheduler.CyclicLR(optimizer, base_lr=0.001, max_lr=0.1,step_size_up=5,mode="triangular")
 
     ce = torch.nn.CrossEntropyLoss()
-    image_encoder.train()
     text_encoder.train()
 
     for epoch in range(args.epochs):
         start = time.time()
         loss_for_monitoring = 0
 
-        for idx, (batch_img, batch_text) in enumerate(train_data_loader):
-
-            image_embedding = image_encoder(batch_img.cuda()) # Output : N x 512
-            text_embedding = text_encoder(batch_text.cuda()) # Output : N x 512
+        for idx, (batch_img, batch_input_ids, batch_attention_mask) in enumerate(train_data_loader):
+            
+            with no_grad():
+                image_embedding = clip_model.encode_image(batch_img.cuda()).float() # Output : N x 512
+            
+            text_embedding = text_encoder(batch_input_ids.cuda(), batch_attention_mask.cuda()).float() # Output : N x 512
 
 
             # Normalization is need for calculating cosine similarity
@@ -92,7 +98,6 @@ if __name__ == "__main__":
             image_to_text = (image_embedding @ text_embedding.T) * math.exp(0.07) # (N x 512) x (512 x N) = N x N
             text_to_image = (text_embedding @ image_embedding.T) * math.exp(0.07) # (N x 512) x (512 x N) = N x N, 0.07 means temperature
 
-
             # Optional : How to add the self-supervised loss?
 
             # Temperature Normalized Cross Entropy loss
@@ -103,12 +108,11 @@ if __name__ == "__main__":
             optimizer.step()
             
             loss_for_monitoring += loss.item()
-            wandb.log({"Loss" : loss_for_monitoring})
-        
+            wandb.log({"Loss" : loss.item()})
+            print("Image text loss : {:.5f}".format(loss.item()))
         # How we determine our best model?
 
         scheduler.step()
 
-        print("Epoch : {:2d} , audio text loss : {:.5f} , Time : {}".format(epoch, loss_for_monitoring / len(train_data_loader), time.time() - start))
-        torch.save(image_encoder.state_dict(), "./image_encoder.pth")
+        print("Epoch : {:2d} , image text loss : {:.5f} , Time : {}".format(epoch, loss_for_monitoring / len(train_data_loader), time.time() - start))
         torch.save(text_encoder.state_dict(), "./text_encoder.pth")
