@@ -25,15 +25,16 @@ class ImageTextPairDataset(Dataset):
     def __getitem__(self, idx):
 
         
-        image_path = self.image_list[idx]
-
-        text_idx = int(image_path.split("/")[-1].split(".")[0])
-        text_prompt = self.image_text_dataframe.iloc[text_idx]["text"]
         
-        image = self.preprocess(PIL.Image.open(image_path))
-        image_tensor = image
-
         try:
+            image_path = self.image_list[idx]
+
+            text_idx = int(image_path.split("/")[-1].split(".")[0])
+            text_prompt = self.image_text_dataframe.iloc[text_idx]["text"]
+        
+            image = self.preprocess(PIL.Image.open(image_path))
+            image_tensor = image
+
             text_tensor = self.tokenizer(
                 text_prompt,
                 return_tensors='pt',
@@ -60,4 +61,4 @@ class ImageTextPairDataset(Dataset):
 
 
 
-dataset = ImageTextPairDataset()
+# dataset = ImageTextPairDataset()
