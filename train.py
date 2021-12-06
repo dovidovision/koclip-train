@@ -2,6 +2,7 @@ import torch
 import clip
 import random
 import argparse
+from tqdm import tqdm
 from torch.autograd.grad_mode import no_grad
 
 import torch.nn.functional as F
@@ -90,7 +91,8 @@ if __name__ == "__main__":
         start = time.time()
         loss_for_monitoring = 0
 
-        for idx, (batch_img, batch_input_ids, batch_attention_mask) in enumerate(trainloader):
+        pbar = tqdm(enumerate(trainloader), total=len(trainloader))
+        for idx, (batch_img, batch_input_ids, batch_attention_mask) in pbar:
             
             with no_grad():
                 image_embedding = clip_model.encode_image(batch_img.cuda()).float() # Output : N x 512
@@ -122,14 +124,20 @@ if __name__ == "__main__":
             optimizer.step()
             
             loss_for_monitoring += loss.item()
+
+            pbar.update()
+            pbar.set_description(
+                f"Train: [{epoch+1:03d}]",
+                f"Loss: {(loss_for_monitoring/(idx+1)):.3f}"
+            )
             wandb.log({"Train Iteration Loss" : loss.item()})
 
-            if idx % 100 == 0:
-                print("Batch : {}, Image text loss : {:.5f}".format(idx, loss.item()))
+            # if idx % 100 == 0:
+            #     print("Batch : {}, Image text loss : {:.5f}".format(idx, loss.item()))
                 
             
         # How we determine our best model?
-
+        pbar.close()
         scheduler.step()
 
         print("Epoch : {:2d} , image text loss : {:.5f} , Time : {}".format(epoch, loss_for_monitoring / len(trainloader), time.time() - start))
