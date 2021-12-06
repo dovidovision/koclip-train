@@ -37,6 +37,8 @@ parser.add_argument('--step_size', default=1, type=float,
 parser.add_argument('--num_workers', default=8, type=int,
                     help='Number of workers used in dataloading')       
 
+parser.add_argument('--image_path', default='./data/train', type=str,
+                    help='image path that has images.')
 
 args = parser.parse_args()
 
@@ -45,10 +47,10 @@ args = parser.parse_args()
 if __name__ == "__main__":
     random.seed(42)
     
-    wandb.init(project="ko-clip", entity="easter3163")
+    wandb.init(project="ko-clip")
 
 
-    train_dataset = ImageTextPairDataset() # define in dataset.py
+    train_dataset = ImageTextPairDataset(image_path=args.image_path) # define in dataset.py
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -65,7 +67,7 @@ if __name__ == "__main__":
     clip_model, preprocess = clip.load("ViT-B/32", device=device)
 
     # Validation : Cifar10 
-    validation_dataset = torchvision.datasets.CIFAR10(root='./data', train=False,
+    validation_dataset = torchvision.datasets.CIFAR10(root='./data/cifar10', train=False,
                                        download=True, transform=preprocess)
     testloader = torch.utils.data.DataLoader(validation_dataset, batch_size=args.batch_size,
                                             shuffle=False, num_workers=2)

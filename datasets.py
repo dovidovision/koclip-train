@@ -4,7 +4,7 @@ from torchvision.transforms import transforms
 
 
 from glob import glob
-
+import os
 import PIL
 import pandas as pd
 import clip
@@ -14,18 +14,14 @@ from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 class ImageTextPairDataset(Dataset):
-    def __init__(self):
-        
-        self.image_list = glob("/media/lsh/Samsung_T5/koclip_dataset/*.png")
+    def __init__(self,image_path):
+        self.image_list = glob(os.path.join(image_path,"*.jpg"))
         self.image_text_dataframe = pd.read_csv("./korea.csv")
         # device = "cuda" if torch.cuda.is_available() else "cpu"
         _, self.preprocess = clip.load("ViT-B/32")
         self.tokenizer = AutoTokenizer.from_pretrained("klue/roberta-small", use_fast=True)
         
     def __getitem__(self, idx):
-
-        
-        
         try:
             image_path = self.image_list[idx]
 
