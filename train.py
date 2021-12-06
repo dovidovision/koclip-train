@@ -82,7 +82,7 @@ if __name__ == "__main__":
     scheduler = optim.lr_scheduler.CyclicLR(optimizer, base_lr=0.001, max_lr=0.1,step_size_up=5,mode="triangular")
 
     ce = torch.nn.CrossEntropyLoss()
-    text_encoder.train()
+    text_encoder.projection.train()
 
     max_acc = 0
 
@@ -157,6 +157,7 @@ if __name__ == "__main__":
         text_embedding = text_encoder(batch_input_ids.cuda(), batch_attention_mask.cuda()).float() 
         text_embedding = text_embedding / text_embedding.norm(dim=-1, keepdim=True)
 
+        text_encoder.projection.eval()
         for data in testloader:
             images, labels = data
             image_embedding = clip_model.encode_image(images.cuda()).float()
