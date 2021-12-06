@@ -1,0 +1,7 @@
+parmap==1.5.3
+wandb==0.12.7
+ftfy==6.0.3
+regex==2021.11.10
+tqdm==4.62.3
+transformers
+git+https://github.com/openai/CLIP.git
