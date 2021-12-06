@@ -140,26 +140,20 @@ if __name__ == "__main__":
         
         korean_labels = ["비행기", "자동차", "새", "고양이", "사슴", "개", "개구리", "말", "배", "트럭"]
 
-        batch_input_ids, batch_attention_mask = [], []
-        for korean_label in korean_labels:
-            text_tensor = tokenizer(
-                korean_label,
-                return_tensors='pt',
-                truncation=True,
-                max_length=tokenizer.model_max_length,
-                padding="max_length",
-                add_special_tokens=True,
-                return_token_type_ids=False
-            )
-            unit_input_id = text_tensor['input_ids'][0]
-            unit_attention_mask = text_tensor['attention_mask'][0]
-            batch_input_ids.append(unit_input_id.unsqueeze(0))
-            batch_attention_mask.append(unit_attention_mask.unsqueeze(0))
+        # for korean_label in korean_labels:
+        text_tensor = tokenizer(
+            korean_labels,
+            return_tensors='pt',
+            truncation=True,
+            max_length=tokenizer.model_max_length,
+            padding="max_length",
+            add_special_tokens=True,
+            return_token_type_ids=False
+        )
+            
+        batch_input_ids = text_tensor['input_ids']
+        batch_attention_mask = text_tensor['attention_mask']
         
-        
-        batch_input_ids = torch.cat(batch_input_ids, dim=0)
-        batch_attention_mask = torch.cat(batch_attention_mask, dim=0)
-
         text_embedding = text_encoder(batch_input_ids.cuda(), batch_attention_mask.cuda()).float() 
         text_embedding = text_embedding / text_embedding.norm(dim=-1, keepdim=True)
 
