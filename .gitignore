@@ -1,0 +1,6 @@
+*.csv
+/data
+*.out
+/__pycache__
+Untitled.ipynb
+/wandb
