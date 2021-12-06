@@ -10,24 +10,26 @@ df = pd.read_csv("korea.csv")
 
 headers = {'User-Agent': 'Mozilla/5.0'}
 image_paths = []
+image_extension = ['.jpg','.png']
+image_dir = './data'
 
-
+if not os.path.exists(image_dir):
+    os.makedirs(image_dir,exist_ok=True)
 
 def func(idx):
     try:
-        if not os.path.exists(f"/media/lsh/Samsung_T5/koclip_dataset/{idx}.png"):
-            row = df.iloc[idx]
-            url = row["image_url"]
+        row = df.iloc[idx]
+        url = row["image_url"]
+        if os.path.splitext(url)[-1] in image_extension:
             response = requests.get(url, headers=headers)
             image_paths.append(url)
-            img = Image.open(BytesIO(response.content))
-            img = img.resize((int(img.width / 2), int(img.height / 2)))
-            path = f"/media/lsh/Samsung_T5/koclip_dataset/{idx}.png"
-            img.save(path)
-            
-        
+            img = Image.open(BytesIO(response.content)).convert('RGB')
+            img = img.resize((img.width//4, img.height//4))
+            path = os.path.join(image_dir,f"{idx}.jpg")
+            img.save(path,'jpeg')
+    
     except Exception as e:
-        print(e)
+        print('>> ERROR :',url)
     finally:
         return 0
 
