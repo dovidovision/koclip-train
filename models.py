@@ -9,7 +9,7 @@ from transformers import AutoModel, AutoTokenizer, RobertaForSequenceClassificat
 class ImageEncoder(torch.nn.Module):
     def __init__(self):
         super(ImageEncoder, self).__init__()
-        self.backbone = timm.create_model("resnet18", num_classes=512, pretrained=True)
+        self.backbone = timm.create_model("resnet18", num_classes=12, pretrained=True)
 
     def forward(self, x):
         x = self.backbone(x)

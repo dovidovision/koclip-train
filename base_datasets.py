@@ -1,5 +1,5 @@
 from torch.utils.data.dataset import Dataset
-from torchvision.transforms import transforms
+from torchvision.transforms import transforms as T
 
 
 
@@ -14,28 +14,22 @@ from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 class ImageTextPairDataset(Dataset):
-    def __init__(self,image_path,type):
-        # self.image_list = glob(os.path.join(image_path,"**/*.jpg"))
-        self.type=type
-        if type=='train':
-            self.image_text_dataframe = pd.read_csv("/opt/ml/koclip-train/train.csv")
-        if type=='val':
-            self.image_text_dataframe = pd.read_csv("/opt/ml/koclip-train/val.csv")
+    def __init__(self,image_path):
+        self.image_list = glob(os.path.join(image_path,"*.jpg"))
+        self.image_list = self.image_list[:120000]
+        self.image_text_dataframe = pd.read_csv("/opt/ml/koclip-train/korea.csv")
         # device = "cuda" if torch.cuda.is_available() else "cpu"
         _, self.preprocess = clip.load("ViT-B/32")
         self.tokenizer = AutoTokenizer.from_pretrained("klue/roberta-small", use_fast=True)
         
     def __getitem__(self, idx):
-        if self.type=='val':
-            image_path = self.image_text_dataframe["filename"][idx]
-            image = self.preprocess(PIL.Image.open('/opt/ml/koclip-train/data/'+image_path))
-            return image, self.image_text_dataframe["emotion"][idx]
-        
-        else:
-            image_path = self.image_text_dataframe["filename"][idx]
+        try:
+            image_path = self.image_list[idx]
 
-            text_prompt = self.image_text_dataframe["emotion"][idx]
-            image = self.preprocess(PIL.Image.open('/opt/ml/koclip-train/data/'+image_path))
+            text_idx = int(image_path.split("/")[-1].split(".")[0])
+            text_prompt = self.image_text_dataframe.iloc[text_idx]["text"]
+        
+            image = self.preprocess(PIL.Image.open(image_path))
             image_tensor = image
 
             text_tensor = self.tokenizer(
@@ -48,16 +42,19 @@ class ImageTextPairDataset(Dataset):
                 return_token_type_ids=False
             )
 
+
             input_ids = text_tensor['input_ids'][0]
             attention_mask = text_tensor['attention_mask'][0]
             return image_tensor, input_ids, attention_mask # tensor : 3 x 224 x 224, "happy cat"
-
+        
+        except:
+            return self.__getitem__(idx + 1)
             
         
 
     def __len__(self):
         
-        return len(self.image_text_dataframe["filename"])
+        return len(self.image_list)
 
 
 
